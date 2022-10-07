@@ -9,7 +9,7 @@ from torch import nn, Tensor
 class AdapterLayer(nn.Module):
     def __init__(self, basemodel_hidden_dim: int, hidden_dimension: int, initializer_range: float, **kwargs):
         super().__init__()
-        bert_config = BertConfig(**{**kwargs, **{'basemodel_hidden_dim': basemodel_hidden_dim}})
+        bert_config = BertConfig(**kwargs)
         self.initializer_range = initializer_range
         self.down_project = nn.Linear(basemodel_hidden_dim, hidden_dimension)
         self.encoder = BertEncoder(bert_config)
