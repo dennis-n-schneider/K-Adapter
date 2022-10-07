@@ -19,3 +19,10 @@ And yes, the code would have looked a little better if I had used Python 3.9 or 
 
 See Usage.ipynb for general usage information.
 
+## Configuration
+
+The model is configured in config.py \
+Each used adapter can be modified as depicted in the provided example.
+In the end, the head (either ConcatHead or SumHead) combines the outputs of the $n$ provided adapters. \
+The rest of the config-file described configuration of the BertEncoder-Layer used within the adapter-layers. \
+For more information on the meaning of these configuration options, see the paper.
