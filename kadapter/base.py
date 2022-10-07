@@ -15,13 +15,6 @@ class AdapterLayer(nn.Module):
         self.encoder = BertEncoder(bert_config)
         self.up_project = nn.Linear(hidden_dimension, basemodel_hidden_dim)
 
-    def get_masks(self, input_shape, input_device):
-        attention_mask = torch.zeros(input_shape, device=input_device, dtype=next(self.parameters()).dtype)
-        extended_attention_mask = attention_mask.unsqueeze(1)
-        if attention_mask.dim() == 2:
-            extended_attention_mask = extended_attention_mask.unsqueeze(2)
-        return extended_attention_mask
-
     def forward(self, input_features: Tensor) -> Tensor:
         down_projected = self.down_project(input_features)
         attention_mask = self.get_masks(down_projected.size()[:-1], input_features.device)
@@ -30,6 +23,13 @@ class AdapterLayer(nn.Module):
         up_projected = self.up_project(encoder_outputs[0])
         # skip connection
         return input_features + up_projected
+
+    def get_masks(self, input_shape, input_device):
+        attention_mask = torch.zeros(input_shape, device=input_device, dtype=next(self.parameters()).dtype)
+        extended_attention_mask = attention_mask.unsqueeze(1)
+        if attention_mask.dim() == 2:
+            extended_attention_mask = extended_attention_mask.unsqueeze(2)
+        return extended_attention_mask
 
     def init_weights(self):
         # original
