@@ -44,6 +44,6 @@ class ConcatHead(KAdapterHead):
 
 class HeadFactory:
     
-    def __call__(self, combine: str, head_config: dict) -> KAdapterHead:
+    def __call__(self, combine: str, **head_config) -> KAdapterHead:
         cls = getattr(sys.modules[__name__], combine)
         return cls(**head_config)

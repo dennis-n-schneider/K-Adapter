@@ -15,7 +15,7 @@ class KAdapter(nn.Module):
         if adapters is None:
             adapters = [AdapterFactory(self.basemodel)(**adapter_config) for adapter_config in config.adapters]
         self.adapters = nn.ModuleList(adapters)
-        self.head = HeadFactory()(config.head['combine'], vars(config)) if head is None else head
+        self.head = HeadFactory()(config.head['combine'], **vars(config)) if head is None else head
 
     def forward(self, input_values):
         entire_adapter_outputs = [adapter(input_values) for adapter in self.adapters]

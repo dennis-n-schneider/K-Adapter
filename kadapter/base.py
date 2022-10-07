@@ -7,11 +7,11 @@ from torch import nn, Tensor
 
 
 class AdapterLayer(nn.Module):
-    def __init__(self, basemodel_hidden_dim: int, hidden_dimension: int, initializer_range: float, **kwargs):
+    def __init__(self, basemodel_hidden_dim: int, hidden_dimension: int, initializer_range: float, **bert_config_params):
         super().__init__()
-        bert_config = BertConfig(**kwargs)
         self.initializer_range = initializer_range
         self.down_project = nn.Linear(basemodel_hidden_dim, hidden_dimension)
+        bert_config = BertConfig(**bert_config_params)
         self.encoder = BertEncoder(bert_config)
         self.up_project = nn.Linear(hidden_dimension, basemodel_hidden_dim)
 
@@ -44,7 +44,7 @@ class AdapterLayer(nn.Module):
 
 class Adapter(nn.Module):
 
-    def __init__(self, model, injection_layers, skip_layers=3, **kwargs):
+    def __init__(self, model: nn.Module, injection_layers: str, skip_layers=3, **kwargs):
         super().__init__()
         self.base_model = util.FeatureExtractor(model, injection_layers)
         self.skip_layers = skip_layers
