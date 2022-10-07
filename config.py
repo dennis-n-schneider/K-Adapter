@@ -2,18 +2,28 @@ class AdapterConfig:
     # Configuration per Adapter
     adapters = [
         dict(
+            # This is equal to the papers usage of layers [0,11];
+            # In general, layer 0 is the embedding layer 'embeddings.dropout'
+            #             layer i is 'encoder.layer.(i-1)'
+            # Names may very from model to model,
+            # but can be retrieved by running
+            # print([name for name, mod in basemodel.named_modules()])
             injection_layers = ['embeddings.dropout', 'encoder.layer.10'],
+            # Add a skip-connection spanning n adapter-layers.
             skip_layers = 3,
-            hidden_dimension = 768, # size of the downscaled adapter
+            # Size of the downscaled adapter hidden-dimension
+            hidden_dimension = 768,
+            # Range of initialization of adapter-weights (uniformly in [-n,n])
             initializer_range = 0.0002,
         )
     ]
+    
+    # Combination method of the Adapter-Outputs
     head = dict(
-        """
-        Combination method of the Adapter-Outputs
-        """
+        # One of ConcatHead, SumHead
         combine = 'ConcatHead'
     )
+    # number of labels in the output
     num_labels: int = 3
     initializer_range: float = 0.02 # ? Is this used in the original paper?
     
