@@ -20,8 +20,7 @@ class AdapterLayer(nn.Module):
         extended_attention_mask = attention_mask.unsqueeze(1)
         if attention_mask.dim() == 2:
             extended_attention_mask = extended_attention_mask.unsqueeze(2)
-        # head_mask = [None] * self.n_hidden_layers # needed if only None?
-        return extended_attention_mask# , head_mask # needed if all zero?
+        return extended_attention_mask
 
     def forward(self, input_features: Tensor) -> Tensor:
         down_projected = self.down_project(input_features)
