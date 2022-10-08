@@ -5,6 +5,11 @@ from torch import nn
 
 
 class KAdapter(nn.Module):
+    """
+    The entire K-Adapter Architecture.
+    Encapsules a number of Adapters.
+    Combines Adapter-Ouputs in a KAdapterHead.
+    """
     
     def __init__(self, basemodel: nn.Module, config, 
                  adapters: list = None, head: KAdapterHead = None):

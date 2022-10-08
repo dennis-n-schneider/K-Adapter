@@ -7,6 +7,10 @@ from torch import nn, Tensor
 
 
 class AdapterLayer(nn.Module):
+    """
+    A single adapter layer injected at a certain hidden layer of the base-model.
+    """
+    
     def __init__(self, basemodel_hidden_dim: int, hidden_dimension: int, initializer_range: float, **bert_config_params):
         super().__init__()
         self.initializer_range = initializer_range
@@ -17,19 +21,10 @@ class AdapterLayer(nn.Module):
 
     def forward(self, input_features: Tensor) -> Tensor:
         down_projected = self.down_project(input_features)
-        attention_mask = self.get_masks(down_projected.size()[:-1], input_features.device)
-        encoder_outputs = self.encoder(down_projected,
-                                       attention_mask=attention_mask)
+        encoder_outputs = self.encoder(down_projected)
         up_projected = self.up_project(encoder_outputs[0])
         # skip connection
         return input_features + up_projected
-
-    def get_masks(self, input_shape, input_device):
-        attention_mask = torch.zeros(input_shape, device=input_device, dtype=next(self.parameters()).dtype)
-        extended_attention_mask = attention_mask.unsqueeze(1)
-        if attention_mask.dim() == 2:
-            extended_attention_mask = extended_attention_mask.unsqueeze(2)
-        return extended_attention_mask
 
     def init_weights(self):
         # original
@@ -43,16 +38,20 @@ class AdapterLayer(nn.Module):
 
 
 class Adapter(nn.Module):
+    """
+    A single Adapter-module which can be trained isolated.
+    """
 
     def __init__(self, model: nn.Module, injection_layers: str, skip_layers=3, **kwargs):
         super().__init__()
-        self.base_model = util.FeatureExtractor(model, injection_layers)
+        # add injection-hooks to the base-model
+        self.basemodel = util.FeatureExtractor(model, injection_layers)
         self.skip_layers = skip_layers
         self.adapter_layers = [AdapterLayer(model.config.hidden_size, **kwargs) for _ in injection_layers]
 
     def forward(self, inputs):
-        base_output = self.base_model(inputs)
-        base_hidden_injections = self.base_model.features()
+        base_output = self.basemodel(inputs)
+        base_hidden_injections = self.basemodel.features()
         adapter_outputs = []
         for adapter_module, base_hidden_features in zip(self.adapter_layers, base_hidden_injections):
             prev_adapter_output = adapter_outputs[-1] if adapter_outputs else torch.zeros(base_output.last_hidden_state.shape)
@@ -66,6 +65,9 @@ class Adapter(nn.Module):
 
 
 class AdapterFactory:
+    """
+    Initialize Adapter from configuration.
+    """
     
     def __init__(self, model):
         self.model = model

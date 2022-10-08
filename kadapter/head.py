@@ -4,6 +4,9 @@ import sys
 
 
 class KAdapterHead(nn.Module):
+    """
+    Combines the outputs of Adapters.
+    """
     
     def __init__(self, num_labels, hidden_size, p_dropout=0.1, **kwargs):
         super().__init__()
@@ -12,7 +15,7 @@ class KAdapterHead(nn.Module):
         self.dropout = torch.nn.Dropout()
         self.linear = torch.nn.Linear(hidden_size, num_labels)
         
-    def forward(self, adapter_outputs):
+    def forward(self, adapter_outputs: torch.Tensor):
         output = self.combine(torch.stack(adapter_outputs))
         output = self.dropout(output)
         output = self.linear(output[:, 0, :].squeeze(1))
@@ -23,12 +26,18 @@ class KAdapterHead(nn.Module):
 
 
 class SumHead(KAdapterHead):
+    """
+    Sums up the outputs of Adapters.
+    """
     
     def combine(self, adapter_outputs: torch.Tensor):
         return adapter_outputs.sum(0)
 
 
 class ConcatHead(KAdapterHead):
+    """
+    Concatenates the outputs of Adapters.
+    """
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -43,6 +52,9 @@ class ConcatHead(KAdapterHead):
 
 
 class HeadFactory:
+    """
+    Initializes a KAdapterHead from a combine-string and a Configuration.
+    """
     
     def __call__(self, combine: str, **head_config) -> KAdapterHead:
         cls = getattr(sys.modules[__name__], combine)
