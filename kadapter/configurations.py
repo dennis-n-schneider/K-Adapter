@@ -11,6 +11,7 @@ class AdapterConfig(BertConfig):
                  skip_layers = 3,
                  initializer_range = 0.0002,
                  num_hidden_layers = 2,
+                 freeze = False,
                  **kwargs):
         super().__init__(**kwargs)
         self.model_name = model_name
@@ -19,12 +20,14 @@ class AdapterConfig(BertConfig):
         self.skip_layers = skip_layers
         self.initializer_range = initializer_range
         self.num_hidden_layers = 2
+        self.freeze = freeze
 
 
 class KAdapterHeadConfig(PretrainedConfig):
+    model_type = 'kadapter-head-sum'
     
     def __init__(self, 
-                 head_type: str = 'concat',
+                 head_type: str = 'kadapter-head-sum',
                  **kwargs):
         self.head_type = head_type
         super().__init__(**kwargs)
@@ -35,16 +38,20 @@ class KAdapterConfig(PretrainedConfig):
     is_composition=True
     
     def __init__(self, **kwargs):
-        basemodel_config = kwargs.pop('basemodel_config')
+        self.freeze_basemodel = False
+        basemodel_config = kwargs.pop('basemodel')
         self.basemodel = AutoConfig.for_model(basemodel_config.pop("model_type"), **basemodel_config)
-        self.adapters = [AdapterConfig(**params) for params in kwargs.pop('adapter_configs')]
-        self.head = KAdapterHeadConfig(**kwargs.pop('head_config'))
+        self.adapters = [AdapterConfig(**params) for params in kwargs.pop('adapters')]
+        head_config = kwargs.pop('head')
+        head_config['n_adapters'] = len(self.adapters)
+        head_config['hidden_size'] = self.basemodel.hidden_size
+        self.head = KAdapterHeadConfig(**head_config)
         super().__init__(**kwargs)
 
     @classmethod
     def from_adapter_configs(cls, basemodel_config: PretrainedConfig, adapter_configs : list, head_config : KAdapterHeadConfig):
         adapter_config_dicts = [config.to_dict() for config in adapter_configs]
-        return cls(basemodel_config=basemodel_config.to_dict(), adapter_configs=adapter_config_dicts, head_config=head_config.to_dict())
+        return cls(basemodel=basemodel_config.to_dict(), adapters=adapter_config_dicts, head=head_config.to_dict())
     
     def to_dict(self):
         output = copy.deepcopy(self.__dict__)

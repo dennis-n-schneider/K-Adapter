@@ -48,6 +48,8 @@ class Adapter(PreTrainedModel):
         super().__init__(config)
         # self.basemodel = util.FeatureExtractor(basemodel, config.injection_layers)
         self.adapter_layers = nn.ModuleList([AdapterLayer(config) for _ in config.injection_layers])
+        if config.freeze:
+            util.freeze_model(self)
         
     def forward(self, base_output, base_hidden_states):
         base_hidden_injections = util.extract_features(base_hidden_states, self.config.injection_layers)
