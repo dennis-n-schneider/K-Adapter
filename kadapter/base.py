@@ -32,7 +32,7 @@ class AdapterLayer(PreTrainedModel):
         return input_features + up_projected
 
     def init_weights(self):
-        # original
+        # TODO never used!
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 m.weight.data.uniform_(-self.config.initializer_range, self.config.initializer_range)
@@ -46,7 +46,6 @@ class Adapter(PreTrainedModel):
     
     def __init__(self, config):
         super().__init__(config)
-        # self.basemodel = util.FeatureExtractor(basemodel, config.injection_layers)
         self.adapter_layers = nn.ModuleList([AdapterLayer(config) for _ in config.injection_layers])
         if config.freeze:
             util.freeze_model(self)
