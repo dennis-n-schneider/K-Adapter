@@ -10,6 +10,7 @@ class FeatureExtractor(nn.Module):
     def __init__(self, model, layer_names):
         super().__init__()
         self.model = model
+        
         self._features = [torch.empty(0) for _ in layer_names]
 
         for i, name in enumerate(layer_names):
