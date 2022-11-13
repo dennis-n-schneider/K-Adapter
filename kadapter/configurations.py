@@ -7,7 +7,7 @@ class AdapterConfig(BertConfig):
     def __init__(self,
                  model_name='adapter',
                  hidden_dimension=120,
-                 injection_layers = ('embeddings.dropout', 'encoder.layer.10'),
+                 injection_layers = (0,11),
                  skip_layers = 3,
                  initializer_range = 0.0002,
                  num_hidden_layers = 2,

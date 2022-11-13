@@ -32,10 +32,12 @@ class KAdapterModel(PreTrainedModel):
         if basemodel is None:
             basemodel = AutoModel(config.basemodel)
         if adapters is None:
-            adapters = nn.ModuleList([Adapter(config, basemodel=basemodel) for config in config.adapters])
+            adapters = nn.ModuleList([Adapter(config) for config in config.adapters])
         if head is None:
             head = KAdapterHead(config.head)
         
+        assert basemodel.config.return_dict
+        assert basemodel.config.output_hidden_states
         self.basemodel = basemodel
         self.adapters = adapters
         self.head = head
@@ -61,7 +63,8 @@ class KAdapterModel(PreTrainedModel):
             adapter.config = shared_adapter_config
 
     def forward(self, inputs):
-        entire_adapter_outputs = [adapter(inputs) for adapter in self.adapters]
+        basemodel_out = self.basemodel(inputs)
+        entire_adapter_outputs = [adapter(basemodel_out.last_hidden_state, basemodel_out.hidden_states) for adapter in self.adapters]
         adapter_outputs, basemodel_outputs = zip(*entire_adapter_outputs)
         basemodel_output = basemodel_outputs[0]
         return basemodel_output #self.head([basemodel_output] + adapter_outputs)

@@ -2,6 +2,10 @@ import torch
 from torch import nn
 
 
+def extract_features(hidden_states: torch.Tensor, layer_ids: list):
+    outputs = tuple(feature_tensor for i, feature_tensor in enumerate(hidden_states) if i in layer_ids)
+    return outputs
+    
 class FeatureExtractor(nn.Module):
     """
     Extracts hidden features of a certain model at given layers.
