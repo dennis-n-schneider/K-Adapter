@@ -12,7 +12,7 @@ import logging
 
 class KAdapterModel(PreTrainedModel):
     config_class = KAdapterConfig
-    base_model_prefix = 'kadapter'
+    base_model_prefix = 'basemodel'
     
     # This is correct. Models and configs
     def __init__(self, 
@@ -20,7 +20,6 @@ class KAdapterModel(PreTrainedModel):
                  basemodel: PreTrainedModel = None,
                  adapters: list = None,
                  head: Optional[KAdapterHead] = None):
-        print(config, basemodel, adapters, head)
         if config is None and (basemodel is None or adapters is None or head is None):
             raise ValueError("Either a configuration or models have to be provided.")
         if config is None:

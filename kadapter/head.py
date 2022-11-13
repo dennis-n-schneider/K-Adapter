@@ -21,6 +21,9 @@ class KAdapterHead:
     
     def combine(self, adapter_outputs):
         pass
+    
+    def get_output_embeddings(self):
+        raise NotImplementedError()
 
 
 class SumHead(KAdapterHead, PreTrainedModel):
