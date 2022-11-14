@@ -23,28 +23,20 @@ class KAdapterModel(PreTrainedModel):
             config = KAdapterConfig.from_adapter_configs(basemodel.config if basemodel else None,
                                                          [adapter.config for adapter in adapters] if adapters else None,
                                                          head.config if head else None)
-        else:
-            if not isinstance(config, self.config_class):
-                raise ValueError(f"Config: {config} has to be of type {self.config_class}")
-        assert (config.basemodel or basemodel) and \
-               (config.adapters or adapters) and \
-               (config.head or head)
-
-        basemodel = KAdapterModel.__get_object_from_config(basemodel, config, 'basemodel')
-        adapters = KAdapterModel.__get_object_from_config(adapters, config, 'adapters')
-        head = KAdapterModel.__get_object_from_config(head, config, 'head')
-
-        if config.freeze_basemodel:
-            util.freeze_model(basemodel)
-
+        elif not isinstance(config, self.config_class):
+            raise ValueError(f"Config: {config} has to be of type {self.config_class}")
+        super().__init__(config)
+        # Either load from config or from a pretrained model
+        assert (self.config.basemodel or basemodel) and \
+               (self.config.adapters or adapters) and \
+               (self.config.head or head)
         assert basemodel.config.return_dict
         assert basemodel.config.output_hidden_states
-
-        super().__init__(config)
-
-        self.basemodel = basemodel
-        self.adapters = adapters
-        self.head = head
+        self.basemodel = KAdapterModel.__get_object_from_config(basemodel, self.config, 'basemodel')
+        self.adapters = KAdapterModel.__get_object_from_config(adapters, self.config, 'adapters')
+        self.head = KAdapterModel.__get_object_from_config(head, self.config, 'head')
+        if self.config.freeze_basemodel:
+            util.freeze_model(self.basemodel)
 
     def forward(self, inputs):
         basemodel_out = self.basemodel(inputs)
