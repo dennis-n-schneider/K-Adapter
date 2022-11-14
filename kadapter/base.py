@@ -1,10 +1,10 @@
 import torch
 from torch import nn, Tensor
-from transformers import BertConfig
-from transformers import PreTrainedModel
+from transformers import BertConfig, PreTrainedModel, AutoConfig, AutoModel
 from transformers.models.bert.modeling_bert import BertEncoder
 
 from . import util
+from .configurations import AdapterConfig
 
 
 class AdapterLayer(PreTrainedModel):
@@ -42,6 +42,7 @@ class AdapterLayer(PreTrainedModel):
 
 
 class Adapter(PreTrainedModel):
+    config_class = AdapterConfig
 
     def __init__(self, config):
         super().__init__(config)
@@ -62,3 +63,6 @@ class Adapter(PreTrainedModel):
                 adapter_outputs[-1] += adapter_outputs[int(len(adapter_outputs) // self.adapter_skip_layers)]
 
         return adapter_outputs[-1], base_output
+
+AutoConfig.register("kadapter-adapter", AdapterConfig)
+AutoModel.register(AdapterConfig, Adapter)

@@ -14,59 +14,37 @@ class KAdapterModel(PreTrainedModel):
     config_class = KAdapterConfig
     base_model_prefix = 'basemodel'
 
-    # This is correct. Models and configs
     def __init__(self,
                  config: Optional[KAdapterConfig] = None,
                  basemodel: PreTrainedModel = None,
                  adapters: list = None,
                  head: Optional[KAdapterHead] = None):
-        if config is None and (basemodel is None or adapters is None or head is None):
-            raise ValueError("Either a configuration or models have to be provided.")
         if config is None:
-            config = KAdapterConfig.from_adapter_configs(basemodel.config, [adapter.config for adapter in adapters],
-                                                         head.config)
+            config = KAdapterConfig.from_adapter_configs(basemodel.config if basemodel else None,
+                                                         [adapter.config for adapter in adapters] if adapters else None,
+                                                         head.config if head else None)
         else:
             if not isinstance(config, self.config_class):
                 raise ValueError(f"Config: {config} has to be of type {self.config_class}")
+        assert (config.basemodel or basemodel) and \
+               (config.adapters or adapters) and \
+               (config.head or head)
 
-        # initialize with config
-        super().__init__(config)
+        basemodel = KAdapterModel.__get_object_from_config(basemodel, config, 'basemodel')
+        adapters = KAdapterModel.__get_object_from_config(adapters, config, 'adapters')
+        head = KAdapterModel.__get_object_from_config(head, config, 'head')
 
-        if basemodel is None:
-            basemodel = AutoModel.from_config(config.basemodel)
-        if adapters is None:
-            adapters = nn.ModuleList([Adapter(config) for config in config.adapters])
-        if head is None:
-            head = AutoModel.from_config(config.head)
+        if config.freeze_basemodel:
+            util.freeze_model(basemodel)
 
         assert basemodel.config.return_dict
         assert basemodel.config.output_hidden_states
+
+        super().__init__(config)
+
         self.basemodel = basemodel
         self.adapters = adapters
         self.head = head
-
-        if self.basemodel.config.to_dict() != self.config.basemodel.to_dict():
-            logging.warning(
-                f"Config of the Basemodel is overwritten by shared Basemodel config"
-            )
-        if [adapter.config.to_dict() for adapter in adapters] != \
-                [config.to_dict() for config in self.config.adapters]:
-            logging.warning(
-                f"Configs of the Adapters are overwritten by shared Adapter config"
-            )
-        if self.head.config.to_dict() != self.config.head.to_dict():
-            logging.warning(
-                f"Config of the K-Adapter Head is overwritten by shared Head config"
-            )
-
-        self.basemodel.config = self.config.basemodel
-        self.head.config = self.config.head
-        # probably does not work, should match by name.
-        for adapter, shared_adapter_config in zip(self.adapters, config.adapters):
-            adapter.config = shared_adapter_config
-
-        if config.freeze_basemodel:
-            util.freeze_model(self.basemodel)
 
     def forward(self, inputs):
         basemodel_out = self.basemodel(inputs)
@@ -87,13 +65,49 @@ class KAdapterModel(PreTrainedModel):
             **kwargs
     ):
         # TODO: Case where extra config is supplied to a certain adapter!
-        config = None
+        if 'config' in kwargs:
+            config = kwargs.pop('config')
+        else:
+            config = None
+        basemodel = AutoModel.from_pretrained(basemodel_pretrained_model_name_or_path, **kwargs) \
+            if basemodel_pretrained_model_name_or_path else None
         adapter_models = [Adapter.from_pretrained(name_or_path)
-                          for name_or_path in adapters_pretrained_model_name_or_path]
-        basemodel = AutoModel.from_pretrained(basemodel_pretrained_model_name_or_path)
-        # TODO: Load pretrained Head. Should be AutoModel
-        kadapter_head = KAdapterHead.from_pretrained(head_pretrained_model_name_or_path)
+                          for name_or_path in adapters_pretrained_model_name_or_path] \
+            if adapters_pretrained_model_name_or_path else None
+        kadapter_head = AutoModel.from_pretrained(head_pretrained_model_name_or_path) \
+            if head_pretrained_model_name_or_path else None
         return cls(basemodel=basemodel, adapters=adapter_models, head=kadapter_head, config=config)
 
     def get_output_embeddings(self):
         return self.head.get_output_embeddings()
+
+    @staticmethod
+    def __get_object_from_config(pretrained, explicit_config, attribute_name: str):
+        if attribute_name == 'adapters':
+            return KAdapterModel.__get_adapters_from_config(pretrained, explicit_config)
+        configured_object = getattr(explicit_config, attribute_name)
+        if not pretrained:
+            pretrained = AutoModel.from_config(configured_object)
+        if not configured_object:
+            setattr(explicit_config, attribute_name, pretrained.config)
+        elif pretrained.config.to_dict() != configured_object.to_dict():
+            logging.warning(
+                f"Config of pretrained {attribute_name} is overwritten by explicit {attribute_name} config"
+            )
+            pretrained.config = configured_object
+        return pretrained
+
+    @staticmethod
+    def __get_adapters_from_config(pretrained, explicit_config):
+        if not pretrained:
+            pretrained = nn.ModuleList([Adapter(config) for config in explicit_config.adapters])
+        if not explicit_config.adapters:
+            explicit_config.adapters = [adapter.config for adapter in pretrained]
+        elif [adapter.config.to_dict() for adapter in pretrained] != \
+                [config.to_dict() for config in explicit_config.adapters]:
+            logging.warning(
+                f"Configs of pretrained Adapters are overwritten by explicit Adapter configs"
+            )
+            for pretrained_adapter, configured_adapter in zip(pretrained, explicit_config.adapters):
+                pretrained_adapter.config = configured_adapter
+        return pretrained
