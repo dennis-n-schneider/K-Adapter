@@ -1,7 +1,7 @@
-from .configurations import KAdapterSumHeadConfig, KAdapterConcatHeadConfig, KAdapterHeadConfig
-
-from transformers import PreTrainedModel, PretrainedConfig, AutoConfig, AutoModel
 import torch
+from transformers import PreTrainedModel, AutoConfig, AutoModel
+
+from .configurations import KAdapterSumHeadConfig, KAdapterConcatHeadConfig, KAdapterHeadConfig
 
 
 class KAdapterHead:

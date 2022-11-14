@@ -1,11 +1,10 @@
-from . import util
-
-from transformers import BertConfig
-from transformers.models.bert.modeling_bert import BertEncoder
 import torch
 from torch import nn, Tensor
-
+from transformers import BertConfig
 from transformers import PreTrainedModel
+from transformers.models.bert.modeling_bert import BertEncoder
+
+from . import util
 
 
 class AdapterLayer(PreTrainedModel):

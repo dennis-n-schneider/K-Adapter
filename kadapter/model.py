@@ -1,13 +1,13 @@
+import logging
+from typing import Optional
+
+from torch import nn
+from transformers import PreTrainedModel, AutoModel
+
+from . import util
 from .base import Adapter
 from .configurations import KAdapterConfig
 from .head import KAdapterHead
-from . import util
-
-from transformers import PreTrainedModel, AutoModel, AutoConfig
-from typing import Optional
-from torch import nn
-
-import logging
 
 
 class KAdapterModel(PreTrainedModel):

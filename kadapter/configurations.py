@@ -1,5 +1,6 @@
-from transformers import BertConfig, PretrainedConfig, AutoConfig
 import copy
+
+from transformers import BertConfig, PretrainedConfig, AutoConfig
 
 
 class AdapterConfig(BertConfig):
